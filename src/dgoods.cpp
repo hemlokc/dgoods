@@ -20,10 +20,12 @@ ACTION dgoods::create(const name& issuer,
                       const name& rev_partner,
                       const name& category,
                       const name& token_name,
+                      const name& melt_to_id,
                       const bool& fungible,
                       const bool& burnable,
                       const bool& sellable,
                       const bool& transferable,
+                      const bool& meltable,
                       const double& rev_split,
                       const string& base_uri,
                       const uint32_t& max_issue_days,
@@ -43,6 +45,12 @@ ACTION dgoods::create(const name& issuer,
         if (fungible == false) {
             check( max_supply.symbol.precision() == 0, "NFT must have max supply as int, precision of 0" );
         }
+    }
+
+    // if meltable, check that melt_to_category ft exists
+    if ( meltable ) {
+      // require ft already exists
+      const auto& token = dgood_table.get( melt_to_id, "token does not exist" );
     }
 
     // check if issuer account exists
@@ -81,10 +89,12 @@ ACTION dgoods::create(const name& issuer,
         stats.issuer = issuer;
         stats.rev_partner= rev_partner;
         stats.token_name = token_name;
+        stats.melt_to_category = melt_to_category;
         stats.fungible = fungible;
         stats.burnable = burnable;
         stats.sellable = sellable;
         stats.transferable = transferable;
+        stats.meltable = meltable;
         stats.current_supply = current_supply;
         stats.issued_supply = issued_supply;
         stats.rev_split = rev_split;
@@ -149,6 +159,50 @@ ACTION dgoods::issue(const name& to,
         s.current_supply += quantity;
         s.issued_supply += quantity;
     });
+}
+
+ACTION dgoods::meltnft(const name& owner,
+                       const name& melt_to_id,
+                       const vector<uint64_t>& dgood_ids) {
+    require_auth(owner);
+
+    check( dgood_ids.size() <= 20, "max batch size of 20" );
+    // loop through vector of dgood_ids, check token exists
+    lock_index lock_table( get_self(), get_self().value );
+    dgood_index dgood_table( get_self(), get_self().value );
+    for ( auto const& dgood_id: dgood_ids ) {
+        const auto& token = dgood_table.get( dgood_id, "token does not exist" );
+        check( token.owner == owner, "must be token owner" );
+
+        stats_index stats_table( get_self(), token.category.value );
+        const auto& dgood_stats = stats_table.get( token.token_name.value, "dgood stats not found" );
+
+        check( dgood_stats.meltable == true, "Not meltable");
+        check( dgood_stats.fungible == false, "Cannot call meltable on fungible token");
+        // make sure token not locked;
+        auto locked_nft = lock_table.find( dgood_id );
+        check(locked_nft == lock_table.end(), "token locked");
+
+        asset quantity(1, dgood_stats.max_supply.symbol);
+
+        const auto& melttoken = dgood_table.get( melt_to_id, "melt token does not exist" );
+        stats_index melt_stats_table( get_self(), melttoken.category.value );
+        const auto& melt_dgood_stats = melt_stats_table.get( melttoken.token_name.value, "dgood stats not found" );
+
+        // decrease current supply
+        stats_table.modify( dgood_stats, same_payer, [&]( auto& s ) {
+            s.current_supply -= quantity;
+        });
+
+        // lower balance from owner
+        _sub_balance(owner, dgood_stats.category_name_id, quantity);
+
+        // add ft balance to burner
+        _add_balance(owner, get_self(), melttoken.category.value, melttoken.token_name.value, melt_dgood_stats.category_name_id, quantity);
+
+        // erase token
+        dgood_table.erase( token );
+    }
 }
 
 ACTION dgoods::burnnft(const name& owner,
@@ -578,4 +632,3 @@ extern "C" {
         }
     }
 }
-

@@ -30,10 +30,12 @@ CONTRACT dgoods: public contract {
                       const name& rev_partner,
                       const name& category,
                       const name& token_name,
+                      const name& melt_to_id,
                       const bool& fungible,
                       const bool& burnable,
                       const bool& sellable,
                       const bool& transferable,
+                      const bool& meltable,
                       const double& rev_split,
                       const string& base_uri,
                       const uint32_t& max_issue_days,
@@ -54,6 +56,10 @@ CONTRACT dgoods: public contract {
         ACTION burnft(const name& owner,
                       const uint64_t& category_name_id,
                       const asset& quantity);
+
+        ACTION meltnft(const name& owner,
+                       const uint64_t& category_name_id,
+                       const asset& quantity);
 
         void buynft(const name& from, const name& to, const asset& quantity, const string& memo);
 
@@ -124,9 +130,11 @@ CONTRACT dgoods: public contract {
             bool           burnable;
             bool           sellable;
             bool           transferable;
+            bool           meltable;
             name           issuer;
             name           rev_partner;
             name           token_name;
+            name           melt_to_id;
             uint64_t       category_name_id;
             asset          max_supply;
             time_point_sec max_issue_window;
