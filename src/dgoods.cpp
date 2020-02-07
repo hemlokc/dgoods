@@ -53,6 +53,7 @@ ACTION dgoods::create(const name& issuer,
       const auto& melttoken = dgood_table.get( melt_to_id, "token does not exist" );
       stats_index melt_stats_table( get_self(), melttoken.category.value );
       const auto& melt_dgood_stats = melt_stats_table.get( melttoken.token_name.value, "dgood stats not found" );
+
       check( melt_dgood_stats.transferable == true, "melt to token must be transferable");
       check( melt_dgood_stats.fungible == true, "melt to token must be fungible");
     }
@@ -201,7 +202,7 @@ ACTION dgoods::meltnft(const name& owner,
             s.current_supply -= quantity;
         });
 
-        // lower balance from owner
+        // lower nft balance from owner
         _sub_balance(owner, dgood_stats.category_name_id, quantity);
 
         // transfer ft from contract to burner
