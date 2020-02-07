@@ -50,7 +50,11 @@ ACTION dgoods::create(const name& issuer,
     // if meltable, check that melt_to_id ft exists
     if ( meltable ) {
       // require ft already exists
-      const auto& token = dgood_table.get( melt_to_id, "token does not exist" );
+      const auto& melttoken = dgood_table.get( melt_to_id, "token does not exist" );
+      stats_index melt_stats_table( get_self(), melttoken.category.value );
+      const auto& melt_dgood_stats = melt_stats_table.get( melttoken.token_name.value, "dgood stats not found" );
+      check( melt_dgood_stats.transferable == true, "melt to token must be transferable");
+      check( melt_dgood_stats.fungible == true, "melt to token must be fungible");
     }
 
     // check if issuer account exists
@@ -188,6 +192,10 @@ ACTION dgoods::meltnft(const name& owner,
         stats_index melt_stats_table( get_self(), melttoken.category.value );
         const auto& melt_dgood_stats = melt_stats_table.get( melttoken.token_name.value, "dgood stats not found" );
 
+        asset melt_to_quantity(1, melt_dgood_stats.max_supply.symbol);
+
+        _checkasset( melt_to_quantity, true );
+
         // decrease current supply
         stats_table.modify( dgood_stats, same_payer, [&]( auto& s ) {
             s.current_supply -= quantity;
@@ -196,7 +204,8 @@ ACTION dgoods::meltnft(const name& owner,
         // lower balance from owner
         _sub_balance(owner, dgood_stats.category_name_id, quantity);
 
-        // add ft balance to burner
+        // transfer ft from contract to burner
+        _sub_balance(get_self(), owner, melt_dgood_stats.category_name_id, quantity);
         _add_balance(owner, get_self(), melttoken.category.value, melttoken.token_name.value, melt_dgood_stats.category_name_id, quantity);
 
         // erase token
