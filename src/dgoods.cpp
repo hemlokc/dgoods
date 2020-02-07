@@ -192,7 +192,7 @@ ACTION dgoods::meltnft(const name& owner,
         asset quantity(1, dgood_stats.max_supply.symbol);
 
         const auto& melt_token = dgood_table.get( dgood_stats.melt_to_id.value, "melt token does not exist" );
-        
+
         stats_index melt_stats_table( get_self(), melt_token.category.value );
         const auto& melt_dgood_stats = melt_stats_table.get( melt_token.token_name.value, "dgood stats not found" );
 
@@ -633,7 +633,7 @@ extern "C" {
 
         if ( code == self ) {
             switch( action ) {
-                EOSIO_DISPATCH_HELPER( dgoods, (setconfig)(create)(issue)(burnnft)(burnft)(transfernft)(transferft)(listsalenft)(closesalenft)(logcall)(freezemaxsup) )
+                EOSIO_DISPATCH_HELPER( dgoods, (setconfig)(create)(issue)(meltnft)(burnnft)(burnft)(transfernft)(transferft)(listsalenft)(closesalenft)(logcall)(freezemaxsup) )
             }
         }
 
