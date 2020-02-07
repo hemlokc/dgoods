@@ -47,7 +47,7 @@ ACTION dgoods::create(const name& issuer,
         }
     }
 
-    // if meltable, check that melt_to_category ft exists
+    // if meltable, check that melt_to_id ft exists
     if ( meltable ) {
       // require ft already exists
       const auto& token = dgood_table.get( melt_to_id, "token does not exist" );
@@ -89,7 +89,7 @@ ACTION dgoods::create(const name& issuer,
         stats.issuer = issuer;
         stats.rev_partner= rev_partner;
         stats.token_name = token_name;
-        stats.melt_to_category = melt_to_category;
+        stats.melt_to_id = melt_to_id;
         stats.fungible = fungible;
         stats.burnable = burnable;
         stats.sellable = sellable;
@@ -162,7 +162,6 @@ ACTION dgoods::issue(const name& to,
 }
 
 ACTION dgoods::meltnft(const name& owner,
-                       const name& melt_to_id,
                        const vector<uint64_t>& dgood_ids) {
     require_auth(owner);
 
@@ -185,7 +184,7 @@ ACTION dgoods::meltnft(const name& owner,
 
         asset quantity(1, dgood_stats.max_supply.symbol);
 
-        const auto& melttoken = dgood_table.get( melt_to_id, "melt token does not exist" );
+        const auto& melttoken = dgood_table.get( dgood_stats.melt_to_id.value, "melt token does not exist" );
         stats_index melt_stats_table( get_self(), melttoken.category.value );
         const auto& melt_dgood_stats = melt_stats_table.get( melttoken.token_name.value, "dgood stats not found" );
 

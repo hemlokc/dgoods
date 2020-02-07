@@ -58,8 +58,7 @@ CONTRACT dgoods: public contract {
                       const asset& quantity);
 
         ACTION meltnft(const name& owner,
-                       const uint64_t& category_name_id,
-                       const asset& quantity);
+                       const vector<uint64_t>& dgood_ids);
 
         void buynft(const name& from, const name& to, const asset& quantity, const string& memo);
 
