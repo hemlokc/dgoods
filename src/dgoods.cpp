@@ -50,9 +50,10 @@ ACTION dgoods::create(const name& issuer,
     // if meltable, check that melt_to_id ft exists
     if ( meltable ) {
       // require ft already exists
-      const auto& melttoken = dgood_table.get( melt_to_id, "token does not exist" );
-      stats_index melt_stats_table( get_self(), melttoken.category.value );
-      const auto& melt_dgood_stats = melt_stats_table.get( melttoken.token_name.value, "dgood stats not found" );
+      const auto& melt_token = dgood_table.get( melt_to_id, "token does not exist" );
+
+      stats_index melt_stats_table( get_self(), melt_token.category.value );
+      const auto& melt_dgood_stats = melt_stats_table.get( melt_token.token_name.value, "dgood stats not found" );
 
       check( melt_dgood_stats.transferable == true, "melt to token must be transferable");
       check( melt_dgood_stats.fungible == true, "melt to token must be fungible");
@@ -183,15 +184,17 @@ ACTION dgoods::meltnft(const name& owner,
 
         check( dgood_stats.meltable == true, "Not meltable");
         check( dgood_stats.fungible == false, "Cannot call meltable on fungible token");
+
         // make sure token not locked;
         auto locked_nft = lock_table.find( dgood_id );
         check(locked_nft == lock_table.end(), "token locked");
 
         asset quantity(1, dgood_stats.max_supply.symbol);
 
-        const auto& melttoken = dgood_table.get( dgood_stats.melt_to_id.value, "melt token does not exist" );
-        stats_index melt_stats_table( get_self(), melttoken.category.value );
-        const auto& melt_dgood_stats = melt_stats_table.get( melttoken.token_name.value, "dgood stats not found" );
+        const auto& melt_token = dgood_table.get( dgood_stats.melt_to_id.value, "melt token does not exist" );
+        
+        stats_index melt_stats_table( get_self(), melt_token.category.value );
+        const auto& melt_dgood_stats = melt_stats_table.get( melt_token.token_name.value, "dgood stats not found" );
 
         asset melt_to_quantity(1, melt_dgood_stats.max_supply.symbol);
 
@@ -207,7 +210,7 @@ ACTION dgoods::meltnft(const name& owner,
 
         // transfer ft from contract to burner
         _sub_balance(get_self(), owner, melt_dgood_stats.category_name_id, quantity);
-        _add_balance(owner, get_self(), melttoken.category.value, melttoken.token_name.value, melt_dgood_stats.category_name_id, quantity);
+        _add_balance(owner, get_self(), melt_token.category.value, melt_token.token_name.value, melt_dgood_stats.category_name_id, quantity);
 
         // erase token
         dgood_table.erase( token );
